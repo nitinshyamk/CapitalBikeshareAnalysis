@@ -1,3 +1,5 @@
+SELECT * FROM cbikeshare.rides LIMIT 10;
+
 -- monthly time series
 SELECT 
     COUNT(*) AS tripCount, month(r.startTime) as startMonth, s.address
@@ -41,7 +43,28 @@ GROUP BY a.startMonth, a.tripLength;
  -- get all triplengths for trips less than four hours
 SELECT MINUTE(t.tripLength) + HOUR(t.tripLength) * 60 AS tripLength,
 			t.startMonth as startMonth
-		FROM
+	FROM
 			(SELECT TIMEDIFF(endTime, startTime) as tripLength, monthname(startTime) as startMonth
 			FROM cbikeshare.rides) as t;
-	WHERE t.tripLength < 240;
+            
+-- get hourly time series 
+SELECT 
+    (DAYOFYEAR(startTime) - 152) * 24 + HOUR(startTime) AS hours_since_junefirst,
+    COUNT(*) AS trip_count
+FROM
+    cbikeshare.rides
+WHERE
+    MONTH(startTime) < 9
+        AND MONTH(startTime) > 5
+GROUP BY (DAYOFYEAR(startTime) - 152) * 24 + HOUR(startTime)
+ORDER BY (DAYOFYEAR(startTime) - 152) * 24 + HOUR(startTime);
+
+-- get average weekly time series
+SELECT r.startDayOfWeek, r.startHour, COUNT(*) FROM (SELECT 
+    DAYOFWEEK(rides.startTime) AS startDayOfWeek,
+    HOUR(rides.startTime) AS startHour
+FROM
+	cbikeshare.rides
+WHERE MONTH(startTime) > 5 AND MONTH(startTime) < 9) AS r
+GROUP BY r.startDayOfWeek, r.startHour
+ORDER BY r.startDayOfWeek, r.startHour
